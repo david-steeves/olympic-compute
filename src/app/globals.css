@@ -128,3 +128,12 @@
     @apply font-sans;
   }
 }
+
+:root {
+  --ocg-evergreen: 158 30% 18%;
+  --ocg-sound: 200 55% 36%;
+  --ocg-bone: 36 22% 96%;
+  --ocg-graphite: 220 14% 14%;
+}
+
+.font-display { font-family: 'Inter', system-ui, sans-serif; letter-spacing: -0.015em; }
