@@ -15,6 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://olympic-compute.vercel.app'),
   title: 'Olympic Compute Group — Battle Point Campus',
   description:
     'Olympic Compute Group is developing a next-generation AI compute campus at Battle Point Park on Bainbridge Island, Washington.',
@@ -24,6 +25,14 @@ export const metadata: Metadata = {
       'Now under environmental review: a next-generation AI compute campus on Bainbridge Island, Washington.',
     type: 'website',
     siteName: 'Olympic Compute Group',
+    url: 'https://olympic-compute.vercel.app',
+    locale: 'en_US',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Olympic Compute Group — Battle Point Campus',
+    description:
+      'Now under environmental review: a next-generation AI compute campus on Bainbridge Island.',
   },
 };
 
