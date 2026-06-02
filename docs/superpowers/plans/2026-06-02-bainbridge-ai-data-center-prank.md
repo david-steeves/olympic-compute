@@ -8,6 +8,10 @@
 
 **Tech Stack:** Next.js 16 App Router, React 19, TypeScript, Tailwind 4, shadcn/ui, Vercel (Fluid Compute / Node 24 LTS), Playwright for E2E, npm (pnpm not installed locally), `vercel.ts` for config.
 
+**Project layout note (post-bootstrap):** Next.js 16's `create-next-app` ignores `--src-dir false`. Everything is under `src/`. Where the plan below says `app/...` read `src/app/...`; where it says `components/...` read `src/components/...`; where it says `lib/...` read `src/lib/...`. The `@/*` import alias resolves to `./src/*`. `public/`, `vercel.ts`, `tests/`, `docs/`, and config files at the repo root remain at the root.
+
+**OG / social card:** the site must render a rich link-preview card when shared in iMessage, Slack, Twitter, Discord, Facebook, and Nextdoor. Implementation in §Phase 1.5 below.
+
 **Testing posture (read this first):** This is a static marketing site. There is no business logic to TDD. The acceptance gate per Constitution §1 is: type-check, build, Playwright E2E walking the deployed URL, and the three-persona review panel. Use light component smoke tests (does the page render without throwing) instead of full TDD.
 
 ---
@@ -390,6 +394,124 @@ import { Footer } from '@/components/footer';
 git add -A && git commit -m "feat: nav + footer wired into root layout"
 ```
 
+### Task 7.5: Open Graph + Twitter card (rich link preview)
+
+**Goal:** when this URL is dropped into iMessage, Slack, Twitter, FB, Nextdoor, etc., the link unfurls into a large image card with title + description — not a bare URL.
+
+**Files:**
+- Create: `src/app/opengraph-image.tsx` (auto-detected by Next.js App Router → emits `og:image`)
+- Create: `src/app/twitter-image.tsx` (auto-detected → emits `twitter:image`)
+- Modify: `src/app/layout.tsx` (extend the `openGraph` block; add a `twitter` block)
+- Replace later: `src/app/opengraph-image.tsx` will use the real hero composite once the visual team delivers it in Phase 3 (Task 11)
+
+- [ ] **Step 1: Add a `metadataBase` and a placeholder URL'd image to `metadata` in `src/app/layout.tsx`**
+
+Update the metadata block to:
+
+```ts
+export const metadata: Metadata = {
+  metadataBase: new URL('https://olympic-compute.vercel.app'),
+  title: 'Olympic Compute Group — Battle Point Campus',
+  description:
+    'Olympic Compute Group is developing a next-generation AI compute campus at Battle Point Park on Bainbridge Island, Washington.',
+  openGraph: {
+    title: 'Olympic Compute Group — Battle Point Campus',
+    description:
+      'Now under environmental review: a next-generation AI compute campus on Bainbridge Island, Washington.',
+    type: 'website',
+    siteName: 'Olympic Compute Group',
+    url: 'https://olympic-compute.vercel.app',
+    locale: 'en_US',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Olympic Compute Group — Battle Point Campus',
+    description:
+      'Now under environmental review: a next-generation AI compute campus on Bainbridge Island.',
+  },
+};
+```
+
+(Don't manually set `openGraph.images` or `twitter.images` — the file-based `opengraph-image.tsx` and `twitter-image.tsx` in the next step register those automatically and at correct dimensions.)
+
+- [ ] **Step 2: Write `src/app/opengraph-image.tsx`**
+
+For v1 (before the hero composite exists), generate the card dynamically with `next/og`'s `ImageResponse`. This gives a usable share card immediately and is replaced by the static hero composite later.
+
+```tsx
+// src/app/opengraph-image.tsx
+import { ImageResponse } from 'next/og';
+
+export const runtime = 'edge';
+export const alt = 'Olympic Compute Group — Battle Point Campus';
+export const size = { width: 1200, height: 630 };
+export const contentType = 'image/png';
+
+export default function OgImage() {
+  return new ImageResponse(
+    (
+      <div
+        style={{
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'flex-end',
+          padding: 80,
+          backgroundColor: '#1a2a22',
+          backgroundImage:
+            'linear-gradient(135deg, #1a2a22 0%, #2a4a3a 50%, #4a6a55 100%)',
+          color: 'white',
+          fontFamily: 'sans-serif',
+        }}
+      >
+        <div style={{ fontSize: 24, opacity: 0.7, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+          Olympic Compute Group
+        </div>
+        <div style={{ fontSize: 72, fontWeight: 600, marginTop: 16, lineHeight: 1.05, letterSpacing: '-0.02em' }}>
+          A new home for the Pacific Northwest's AI future.
+        </div>
+        <div style={{ fontSize: 28, opacity: 0.8, marginTop: 24 }}>
+          Battle Point Campus · Bainbridge Island, WA
+        </div>
+      </div>
+    ),
+    size,
+  );
+}
+```
+
+- [ ] **Step 3: Write `src/app/twitter-image.tsx`**
+
+Twitter's `summary_large_image` accepts the same 1200×630 PNG. Re-export the same image:
+
+```tsx
+// src/app/twitter-image.tsx
+export { default, runtime, alt, size, contentType } from './opengraph-image';
+```
+
+- [ ] **Step 4: Local smoke test**
+
+```bash
+cd ~/projects/olympic-compute && npm run dev &
+sleep 6
+curl -sI http://localhost:3000/opengraph-image | head -5
+curl -sI http://localhost:3000/twitter-image | head -5
+kill %1
+```
+
+Expected: both return `200 OK` and `content-type: image/png`.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add -A && git commit -m "feat: OG + twitter card for rich link previews"
+```
+
+- [ ] **Step 6: After Phase 3 (visual team) delivers the hero composite, REPLACE `src/app/opengraph-image.tsx`**
+
+When `public/hero-aerial.jpg` exists with the real composite, swap the dynamic `ImageResponse` for a static asset. Either: (a) move `public/og-card.jpg` (a 1200×630 crop of the hero with title overlay baked in by the visual team) and let it auto-register at the route `/og-card.jpg`, or (b) keep the file-based convention by rewriting `src/app/opengraph-image.tsx` to re-export the static asset. Option (a) is simpler and is the default; the visual team should deliver `public/og-card.jpg` as a named deliverable (see Phase 3 Task 11 Step 2).
+
 ---
 
 ## Phase 2 — Homepage section stubs (ship a navigable site)
@@ -559,7 +681,7 @@ The aerial screenshot David shared in the design session is the source tile. Sav
 
 Each subagent gets the spec's §6 (Visual deliverables), the source aerial, the brand identity from `lib/site-config.ts`, and produces one deliverable. Use the Agent tool with `subagent_type: general-purpose` for each. Prompts are written into `docs/superpowers/visual-prompts.md` regardless of whether the subagent has direct image-gen access, so David can regenerate any asset via Midjourney / Flux / Sora later.
 
-- **Subagent A — Architectural viz artist:** produce hero composite (`public/hero-aerial.jpg`). Brief: aerial photographic composite, soccer fields and ballfields replaced by a 412,000 sq ft single-story hyperscale data center with white roof, mechanical penthouse, perimeter security fencing, dual substation hugging the south tree line. Surrounding forest, Maisy Beach, and Venice neighborhood untouched and identifiable.
+- **Subagent A — Architectural viz artist:** produce hero composite (`public/hero-aerial.jpg`) AND a 1200×630 social-share crop (`public/og-card.jpg`). Brief for hero: aerial photographic composite, soccer fields and ballfields replaced by a 412,000 sq ft single-story hyperscale data center with white roof, mechanical penthouse, perimeter security fencing, dual substation hugging the south tree line. Surrounding forest, Maisy Beach, and Venice neighborhood untouched and identifiable. Brief for `og-card.jpg`: same composite, cropped to 1200×630, with a dark gradient overlay along the lower third and the title *"Olympic Compute Group — Battle Point Campus"* baked in (so the card reads punchy in iMessage / Slack previews even without surrounding metadata).
 - **Subagent B — Site plan designer:** produce `public/site-plan.svg`. Brief: top-down architectural diagram, three colored phases, parking grid, cooling annex, substation, fence line, "Battle Point Campus — Master Plan, Olympic Compute Group" title block.
 - **Subagent C — Interior render artist:** produce `public/interior-render.jpg`. Brief: warehouse-scale server hall, vanishing-point aisles of black racks, blue-tinged downlight, slight haze, one human in PPE for scale.
 - **Subagent D — Brand designer:** produce `public/ocg-logo.svg` and `public/favicon.ico`. Brief: refine the stylized mountain mark from `components/logo.tsx` into a proper logomark; deliver SVG + favicon.
