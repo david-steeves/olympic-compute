@@ -28,7 +28,8 @@ export function Footer() {
         </div>
       </div>
       <div className="border-t border-stone-200 py-4 text-center text-xs text-stone-500">
-        © 2026 {site.company}, LLC. All rights reserved.
+        <p>© 2026 {site.company}, LLC. All rights reserved.</p>
+        <p className="mt-1">Engineered from the Salish Sea.</p>
       </div>
     </footer>
   );
