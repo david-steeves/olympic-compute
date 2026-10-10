@@ -1,5 +1,12 @@
 import { test, expect } from '@playwright/test';
 
+test('robots file denies all crawlers', async ({ request }) => {
+  const response = await request.get('/robots.txt');
+  expect(response.ok()).toBe(true);
+  expect(response.headers()['content-type']).toContain('text/plain');
+  expect(await response.text()).toMatch(/^User-agent: \*\s+Disallow: \/\s*$/i);
+});
+
 test('full anonymous-visitor journey', async ({ page }) => {
   // ── 1. Load homepage ──────────────────────────────────────────────────────
   await page.goto('/');

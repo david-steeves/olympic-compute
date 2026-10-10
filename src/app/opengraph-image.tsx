@@ -28,7 +28,7 @@ export default function OgImage() {
           Olympic Compute Group
         </div>
         <div style={{ fontSize: 72, fontWeight: 600, marginTop: 16, lineHeight: 1.05, letterSpacing: '-0.02em' }}>
-          A new home for the Pacific Northwest's AI future.
+          A new home for the Pacific Northwest&apos;s AI future.
         </div>
         <div style={{ fontSize: 28, opacity: 0.8, marginTop: 24 }}>
           Battle Point Campus · Bainbridge Island, WA
